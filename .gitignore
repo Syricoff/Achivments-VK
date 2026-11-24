@@ -1,0 +1,84 @@
+# =========================
+# Operating System & IDE
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# =========================
+# Environment & Secrets
+# =========================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# =========================
+# Node.js & Frontend
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+mini-app/build/
+mini-app/dist/
+mini-app/.vite/
+mini-app/.vite-temp/
+build/
+dist/
+
+# =========================
+# Python & Backend
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# =========================
+# Database & Uploads
+# =========================
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+uploads/
+backend/uploads/
+pgdata/
+*.dump
+*.sql
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/

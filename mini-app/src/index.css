@@ -1,0 +1,305 @@
+/* Tecla Font Family */
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Thin.otf') format('opentype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Thin Italic.otf') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Light Italic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Normal.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Normal.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Normal Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Bold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Bold Italic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Black.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tecla';
+  src: url('/assets/tecla/Tecla Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg-gradient: linear-gradient(180deg, #3F48F5 0%, #6DB5FF 100%);
+  --pink-accent: #F26B9A;
+  --pink-hover: #e65688;
+  --white: #FFFFFF;
+  --blue-text: #3F5BF6;
+  --blue-nav-text: #74B2FC;
+  --gold-badge: #FFD147;
+  --silver-badge: #A6A6A6;
+  --bronze-badge: #FF7E36;
+  --green-badge: #27AE60;
+  --font-family: 'Tecla', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-family) !important;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  font-family: var(--font-family) !important;
+  background: var(--bg-gradient);
+  color: #ffffff;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+button, input, textarea, select {
+  font-family: var(--font-family) !important;
+}
+
+/* Override VKUI default fonts and backgrounds */
+.vkuiAppRoot, .vkuiSplitLayout, .vkuiSplitCol, .vkuiView, .vkuiPanel, .vkuiTypography {
+  background: transparent !important;
+  font-family: var(--font-family) !important;
+}
+
+/* App screen wrapper */
+.screen-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-gradient);
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: calc(105px + env(safe-area-inset-bottom));
+  padding-left: 18px;
+  padding-right: 18px;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Fixed Bottom Navigation matching the mockup */
+.bottom-nav-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.bottom-nav-container {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 380px;
+  background-color: var(--pink-accent);
+  border-radius: 16px;
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(242, 107, 154, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bottom-nav-button {
+  flex: 1;
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 4px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--blue-nav-text);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.bottom-nav-button.active {
+  color: #3F48F5;
+  box-shadow: inset 0 0 0 2px #3F48F5;
+  transform: scale(0.98);
+}
+
+.bottom-nav-button.admin-btn {
+  color: #e65688;
+}
+
+.bottom-nav-button:active {
+  transform: scale(0.95);
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #ffffff;
+  color: #1a1a1a;
+  border-radius: 24px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Custom Scrollbar for normal scrollable containers */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Horizontal scrollable chips bar without clipping */
+.chips-scroll-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  margin: 0 -18px 16px -18px;
+  padding: 4px 18px 8px 18px;
+  width: calc(100% + 36px);
+}
+
+.chips-scroll-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.chip-item {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.chip-item:active {
+  transform: scale(0.95);
+}
+

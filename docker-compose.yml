@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lampa_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: lampa_user
+      POSTGRES_PASSWORD: lampa_password
+      POSTGRES_DB: lampa_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lampa_user -d lampa_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lampa_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://lampa_user:lampa_password@db:5432/lampa_db
+      VK_APP_ID: ${VK_APP_ID:-0}
+      VK_APP_SECRET: ${VK_APP_SECRET:-test_vk_secret_key}
+      ENV: production
+      DEBUG: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/app/uploads
+    command: >
+      sh -c "python seed.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./mini-app
+      dockerfile: Dockerfile
+    container_name: lampa_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  pgdata:
+  uploads_data:
