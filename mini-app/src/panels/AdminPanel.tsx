@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Icon20SparkleOutline,
-  Icon16ViewOutline,
   Icon20CheckCircleOn,
   Icon20Cancel,
   Icon24Dice5Outline,
@@ -303,37 +302,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                   )}
 
                   {/* Screenshot thumbnail */}
-                  {sub.proof_image_url && (
-                    <div
-                      onClick={() => setPreviewImage(sub.proof_image_url)}
-                      style={{
-                        width: '100%',
-                        height: '120px',
-                        borderRadius: '10px',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        marginBottom: '10px',
-                        backgroundColor: '#F3F4F6',
-                        position: 'relative',
-                      }}
-                    >
-                      <img src={sub.proof_image_url} alt="Подтверждение" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{
-                        position: 'absolute',
-                        bottom: '4px',
-                        right: '4px',
-                        backgroundColor: 'rgba(0,0,0,0.6)',
-                        color: '#FFFFFF',
-                        fontSize: '10px',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}>
-                        <span>Нажмите для просмотра</span>
-                        <Icon16ViewOutline width={14} height={14} />
-                      </div>
+                  {sub.proof_image_urls.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                      {sub.proof_image_urls.map((imageUrl, imageIndex) => (
+                        <button
+                          key={imageUrl}
+                          type="button"
+                          onClick={() => setPreviewImage(imageUrl)}
+                          aria-label={`Открыть подтверждение ${imageIndex + 1}`}
+                          style={{ height: '96px', padding: 0, border: 0, borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', backgroundColor: '#F3F4F6', position: 'relative' }}
+                        >
+                          <img src={imageUrl} alt={`Подтверждение ${imageIndex + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <span style={{ position: 'absolute', bottom: '4px', right: '4px', backgroundColor: 'rgba(0,0,0,0.65)', color: '#FFFFFF', fontSize: '10px', padding: '2px 5px', borderRadius: '4px' }}>
+                            {imageIndex + 1} / {sub.proof_image_urls.length}
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   )}
 

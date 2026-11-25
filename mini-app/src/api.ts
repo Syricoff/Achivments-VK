@@ -423,20 +423,43 @@ export const api = {
   },
 
   // Submit task proof
-  async submitTask(taskId: number, proofImageUrl: string, comment?: string): Promise<Submission> {
+  async submitTask(taskId: number, proofImages: string[], comment?: string): Promise<Submission> {
     if (await isBackendAlive()) {
       try {
+        const proofUrls = await Promise.all(proofImages.map(async (proofImage, index) => {
+          if (!proofImage.startsWith('data:')) return proofImage;
+
+          const imageBlob = await fetch(proofImage).then((response) => response.blob());
+          const extension = imageBlob.type.split('/')[1] || 'jpg';
+          const formData = new FormData();
+          formData.append('file', imageBlob, `proof-${index + 1}.${extension}`);
+
+          const uploadResponse = await fetch(`${API_BASE_URL}/api/upload`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${searchParams}` },
+            body: formData,
+          });
+          if (!uploadResponse.ok) {
+            throw new Error('Не удалось загрузить одно из изображений');
+          }
+          const uploadResult: { url: string } = await uploadResponse.json();
+          return uploadResult.url;
+        }));
+
         const res = await fetch(`${API_BASE_URL}/api/tasks/submissions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${searchParams}`,
           },
-          body: JSON.stringify({ task_id: taskId, proof_image_url: proofImageUrl, comment }),
+          body: JSON.stringify({ task_id: taskId, proof_image_urls: proofUrls, comment }),
         });
         if (res.ok) return await res.json();
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.detail || 'Не удалось отправить подтверждение');
       } catch (e) {
-        console.warn('Backend submitTask failed, fallback', e);
+        console.warn('Backend submitTask failed', e);
+        throw e;
       }
     }
 
@@ -448,7 +471,7 @@ export const api = {
       id: Date.now(),
       user_id: user.id,
       task_id: taskId,
-      proof_image_url: proofImageUrl,
+      proof_image_urls: proofImages,
       comment: comment || '',
       status: 'PENDING',
       created_at: new Date().toISOString(),
@@ -653,7 +676,7 @@ export const api = {
         id: 101,
         user_id: 4,
         task_id: 7,
-        proof_image_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80',
+        proof_image_urls: ['https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80'],
         comment: 'Вот мем про утреннюю зарядку и лекции!',
         status: 'PENDING',
         created_at: new Date(Date.now() - 3600000).toISOString(),

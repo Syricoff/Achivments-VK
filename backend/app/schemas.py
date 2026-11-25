@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 # User Schemas
 class UserBase(BaseModel):
@@ -66,7 +66,7 @@ class TaskResponse(TaskBase):
 # Submission Schemas
 class SubmissionCreate(BaseModel):
     task_id: int
-    proof_image_url: str
+    proof_image_urls: List[str] = Field(min_length=1, max_length=5)
     comment: Optional[str] = None
 
 class SubmissionReview(BaseModel):
@@ -77,7 +77,7 @@ class SubmissionResponse(BaseModel):
     id: int
     user_id: int
     task_id: int
-    proof_image_url: str
+    proof_image_urls: List[str]
     comment: Optional[str] = None
     status: str
     admin_comment: Optional[str] = None

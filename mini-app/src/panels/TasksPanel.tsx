@@ -23,7 +23,7 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onTaskSubmitted, 
   // Modals state
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [proofImage, setProofImage] = useState<string>('');
+  const [proofImages, setProofImages] = useState<string[]>([]);
   const [proofComment, setProofComment] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -53,27 +53,39 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onTaskSubmitted, 
 
   const openSubmitModal = (task: Task) => {
     setSelectedTask(task);
-    setProofImage('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80');
+    setProofImages([]);
     setProofComment('');
     setIsSubmitModalOpen(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setProofImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (proofImages.length + files.length > 5) {
+      alert('Можно прикрепить не более 5 фотографий');
+      return;
     }
+
+    const oversizedFile = files.find((file) => file.size > 8 * 1024 * 1024);
+    if (oversizedFile) {
+      alert(`Файл «${oversizedFile.name}» превышает лимит 8 МБ`);
+      return;
+    }
+
+    const dataUrls = await Promise.all(files.map((file) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error(`Не удалось прочитать файл ${file.name}`));
+      reader.readAsDataURL(file);
+    })));
+    setProofImages((current) => [...current, ...dataUrls]);
   };
 
   const handleSubmitProof = async () => {
     if (!selectedTask) return;
     setIsUploading(true);
     try {
-      const sub = await api.submitTask(selectedTask.id, proofImage, proofComment);
+      const sub = await api.submitTask(selectedTask.id, proofImages, proofComment);
       onTaskSubmitted(selectedTask.id, sub);
       setIsSubmitModalOpen(false);
     } catch (e: any) {
@@ -465,23 +477,24 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onTaskSubmitted, 
               Прикрепите скриншот или фото выполнения для модератора:
             </p>
 
-            {/* Proof Preview */}
-            <div style={{
-              width: '100%',
-              height: '160px',
-              borderRadius: '16px',
-              backgroundColor: '#F3F4F6',
-              overflow: 'hidden',
-              marginBottom: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px dashed #D1D5DB',
-            }}>
-              {proofImage ? (
-                <img src={proofImage} alt="Скриншот" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ fontSize: '13px', color: '#9CA3AF' }}>Нет фото</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+              {proofImages.map((image, index) => (
+                <div key={`${index}-${image.length}`} style={{ position: 'relative', width: '84px', height: '84px' }}>
+                  <img src={image} alt={`Подтверждение ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
+                  <button
+                    type="button"
+                    aria-label={`Удалить фото ${index + 1}`}
+                    onClick={() => setProofImages((current) => current.filter((_, imageIndex) => imageIndex !== index))}
+                    style={{ position: 'absolute', top: '3px', right: '3px', border: 0, borderRadius: '50%', width: '22px', height: '22px', background: '#111827', color: '#FFFFFF', cursor: 'pointer' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {proofImages.length === 0 && (
+                <div style={{ width: '100%', padding: '20px', textAlign: 'center', color: '#9CA3AF', background: '#F3F4F6', borderRadius: '12px', fontSize: '13px' }}>
+                  Фото не выбраны
+                </div>
               )}
             </div>
 
@@ -497,8 +510,8 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onTaskSubmitted, 
               cursor: 'pointer',
               marginBottom: '14px',
             }}>
-              Выбрать фото с устройства
-              <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+              {proofImages.length ? `Добавить фото (${proofImages.length}/5)` : 'Выбрать фотографии'}
+              <input type="file" accept="image/*" multiple onChange={handleFileChange} disabled={proofImages.length >= 5} style={{ display: 'none' }} />
             </label>
 
             <textarea
@@ -538,7 +551,7 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ tasks, onTaskSubmitted, 
               <button
                 type="button"
                 onClick={handleSubmitProof}
-                disabled={isUploading}
+                disabled={isUploading || proofImages.length === 0}
                 style={{
                   flex: 1,
                   padding: '12px',

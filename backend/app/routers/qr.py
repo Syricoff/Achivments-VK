@@ -44,7 +44,7 @@ def scan_qr_code(
         submission = Submission(
             user_id=user.id,
             task_id=detective_task.id,
-            proof_image_url="qr_scan_verification",
+            proof_image_urls=[],
             comment=f"Успешное сканирование QR-кода: {code_text}",
             status="APPROVED",
             admin_comment="Автоматически начислено за QR-код"

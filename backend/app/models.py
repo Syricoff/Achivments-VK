@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 from sqlalchemy import (
-    Column, Integer, BigInteger, String, Text, Boolean, 
+    Column, Integer, BigInteger, String, Text, Boolean, JSON,
     DateTime, ForeignKey, Enum as SQLEnum
 )
 from sqlalchemy.orm import relationship
@@ -47,7 +47,7 @@ class Submission(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False, index=True)
-    proof_image_url = Column(String(500), nullable=False)
+    proof_image_urls = Column(JSON, nullable=False, default=list)
     comment = Column(Text, nullable=True)
     status = Column(String(20), default="PENDING", index=True) # "PENDING" | "APPROVED" | "REJECTED"
     admin_comment = Column(Text, nullable=True)

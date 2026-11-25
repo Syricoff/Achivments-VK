@@ -3,10 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
-from .database import engine, Base
+from .database import engine, Base, migrate_submission_proof_images
 from .routers import users, tasks, shop, qr, admin, upload
 
 # Create tables
+migrate_submission_proof_images()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(

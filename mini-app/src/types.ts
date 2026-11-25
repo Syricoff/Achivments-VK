@@ -37,7 +37,7 @@ export interface Submission {
   id: number;
   user_id: number;
   task_id: number;
-  proof_image_url: string;
+  proof_image_urls: string[];
   comment?: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   admin_comment?: string | null;

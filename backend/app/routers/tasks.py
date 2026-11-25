@@ -179,7 +179,7 @@ def submit_task(
     submission = Submission(
         user_id=user.id,
         task_id=task.id,
-        proof_image_url=payload.proof_image_url,
+        proof_image_urls=payload.proof_image_urls,
         comment=payload.comment,
         status="PENDING"
     )

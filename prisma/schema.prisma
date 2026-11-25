@@ -76,7 +76,7 @@ model Submission {
   id            Int              @id @default(autoincrement())
   userId        Int              @map("user_id")
   taskId        Int              @map("task_id")
-  proofImageUrl String           @map("proof_image_url")
+  proofImageUrls Json            @map("proof_image_urls")
   comment       String?          @db.Text
   status        SubmissionStatus @default(PENDING)
   adminComment  String?          @map("admin_comment") @db.Text
