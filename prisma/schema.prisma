@@ -44,7 +44,6 @@ model User {
   role            Role         @default(USER)
   ratingPoints    Int          @default(0) @map("rating_points")
   spendablePoints Int          @default(0) @map("spendable_points")
-  teamName        String?      @map("team_name")
   createdAt       DateTime     @default(now()) @map("created_at")
 
   submissions     Submission[] @relation("UserSubmissions")

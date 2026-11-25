@@ -11,7 +11,6 @@ class UserBase(BaseModel):
     role: str = "USER"
     rating_points: int = 0
     spendable_points: int = 0
-    team_name: Optional[str] = None
 
 class UserResponse(UserBase):
     id: int
@@ -26,7 +25,6 @@ class LeaderboardEntry(BaseModel):
     avatar_url: Optional[str] = None
     rating_points: int
     rank: int
-    team_name: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 # Task Schemas
@@ -146,7 +144,6 @@ class QRCodeResponse(BaseModel):
 
 # Admin Grant
 class PointsGrantRequest(BaseModel):
-    user_id: Optional[int] = None
-    team_name: Optional[str] = None
+    user_id: int
     points: int
     reason: str

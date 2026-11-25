@@ -29,9 +29,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
   // Manual Grant state
-  const [grantTarget, setGrantTarget] = useState<'USER' | 'TEAM'>('USER');
-  const [selectedUserId, setSelectedUserId] = useState<number>(currentUser.id);
-  const [selectedTeam, setSelectedTeam] = useState<string>('Отряд 1');
+  const [participants, setParticipants] = useState<User[]>([]);
+  const [participantSearch, setParticipantSearch] = useState('');
+  const [participantsError, setParticipantsError] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [grantPoints, setGrantPoints] = useState<number>(50);
   const [grantReason, setGrantReason] = useState<string>('Активность на лекции («Самый умный»)');
   const [grantMessage, setGrantMessage] = useState<string | null>(null);
@@ -58,6 +59,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
       if (activeTab === 'MODERATION') {
         const subs = await api.getAdminSubmissions(subFilter === 'PENDING' ? 'PENDING' : undefined);
         setSubmissions(subs);
+      } else if (activeTab === 'MANUAL') {
+        setParticipantsError(null);
+        const users = await api.getAdminUsers();
+        setParticipants(users);
+        setSelectedUserId((selectedId) => users.some((user) => user.id === selectedId)
+          ? selectedId
+          : users.find((user) => user.id === currentUser.id)?.id ?? users[0]?.id ?? null);
       } else if (activeTab === 'QR') {
         const qrs = await api.getAdminQRCodes();
         setQrList(qrs);
@@ -72,6 +80,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
       }
     } catch (e) {
       console.error('Error loading admin data', e);
+      if (activeTab === 'MANUAL') {
+        setParticipantsError(e instanceof Error ? e.message : 'Не удалось загрузить список участников');
+      }
     }
   };
 
@@ -99,10 +110,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   // Manual points grant
   const handleGrant = async () => {
     setGrantMessage(null);
+    if (selectedUserId === null) {
+      setGrantMessage('Ошибка: выберите участника');
+      return;
+    }
+
     try {
-      await api.grantPoints(selectedUserId, grantPoints, grantReason);
-      setGrantMessage(`Успешно начислено +${grantPoints} баллов!`);
+      const result = await api.grantPoints(selectedUserId, grantPoints, grantReason);
+      setGrantMessage(result.message);
       onPointsChanged();
+      try {
+        setParticipants(await api.getAdminUsers());
+      } catch (refreshError) {
+        console.warn('Could not refresh participant balances', refreshError);
+      }
     } catch (e: any) {
       setGrantMessage(`Ошибка: ${e.message}`);
     }
@@ -445,88 +466,46 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
               Используется для заданий лекторов («Самый умный»), зарядки («GYM-бро»), вечерних мероприятий («Живые легенды»).
             </p>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-              <button
-                type="button"
-                onClick={() => setGrantTarget('USER')}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: grantTarget === 'USER' ? 'var(--blue-text)' : '#F3F4F6',
-                  color: grantTarget === 'USER' ? '#FFFFFF' : '#4B5563',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  cursor: 'pointer',
+            <div style={{ marginBottom: '12px' }}>
+              <label htmlFor="participant-search" style={{ fontSize: '12px', fontWeight: 700, color: '#374151', display: 'block', marginBottom: '4px' }}>
+                Найти участника по имени или VK ID:
+              </label>
+              <input
+                id="participant-search"
+                type="search"
+                value={participantSearch}
+                onChange={(e) => {
+                  setParticipantSearch(e.target.value);
+                  setSelectedUserId(null);
                 }}
+                placeholder="Имя или VK ID"
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '13px', marginBottom: '8px' }}
+              />
+              <select
+                value={selectedUserId ?? ''}
+                onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : null)}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '13px' }}
               >
-                Одному участнику
-              </button>
-              <button
-                type="button"
-                onClick={() => setGrantTarget('TEAM')}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: grantTarget === 'TEAM' ? 'var(--blue-text)' : '#F3F4F6',
-                  color: grantTarget === 'TEAM' ? '#FFFFFF' : '#4B5563',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                }}
-              >
-                Всему отряду
-              </button>
+                <option value="">Выберите зарегистрированного участника</option>
+                {participants
+                  .filter((participant) => `${participant.first_name} ${participant.last_name} ${participant.vk_id}`.toLowerCase().includes(participantSearch.trim().toLowerCase()))
+                  .map((participant) => (
+                    <option key={participant.id} value={participant.id}>
+                      {`${participant.last_name} ${participant.first_name}`.trim() || 'Без имени'} · VK ID ${participant.vk_id} · ${participant.rating_points} б.
+                    </option>
+                  ))}
+              </select>
+              {participantsError && (
+                <div style={{ marginTop: '6px', fontSize: '11px', color: '#DC2626' }}>
+                  {participantsError}
+                </div>
+              )}
+              {!participantsError && participants.length === 0 && (
+                <div style={{ marginTop: '6px', fontSize: '11px', color: '#6B7280' }}>
+                  Пока нет зарегистрированных участников.
+                </div>
+              )}
             </div>
-
-            {grantTarget === 'USER' ? (
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#374151', display: 'block', marginBottom: '4px' }}>
-                  Участник:
-                </label>
-                <select
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '10px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                  }}
-                >
-                  <option value={1}>Алексей Иванов (Отряд 1)</option>
-                  <option value={2}>Екатерина Смирнова (Отряд 2)</option>
-                  <option value={3}>Дмитрий Соколов (Отряд 1)</option>
-                  <option value={4}>Анна Кузнецова (Отряд 3)</option>
-                </select>
-              </div>
-            ) : (
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#374151', display: 'block', marginBottom: '4px' }}>
-                  Отряд / Команда:
-                </label>
-                <select
-                  value={selectedTeam}
-                  onChange={(e) => setSelectedTeam(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '10px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '13px',
-                  }}
-                >
-                  <option value="Отряд 1">Отряд 1</option>
-                  <option value="Отряд 2">Отряд 2</option>
-                  <option value="Отряд 3">Отряд 3</option>
-                  <option value="Отряд 4">Отряд 4</option>
-                </select>
-              </div>
-            )}
 
             <div style={{ marginBottom: '12px' }}>
               <label style={{ fontSize: '12px', fontWeight: 700, color: '#374151', display: 'block', marginBottom: '4px' }}>
@@ -576,6 +555,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
 
             <button
               onClick={handleGrant}
+              disabled={selectedUserId === null}
               style={{
                 width: '100%',
                 padding: '12px',
@@ -586,7 +566,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                 fontWeight: 900,
                 fontSize: '13px',
                 textTransform: 'uppercase',
-                cursor: 'pointer',
+                cursor: selectedUserId === null ? 'not-allowed' : 'pointer',
+                opacity: selectedUserId === null ? 0.6 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -598,7 +579,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
             </button>
 
             {grantMessage && (
-              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#059669', textAlign: 'center' }}>
+              <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: grantMessage.startsWith('Ошибка:') ? '#DC2626' : '#059669', textAlign: 'center' }}>
                 {grantMessage}
               </div>
             )}

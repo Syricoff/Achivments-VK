@@ -19,7 +19,6 @@ def update_profile(
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
     avatar_url: Optional[str] = None,
-    team_name: Optional[str] = None,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -29,9 +28,6 @@ def update_profile(
         user.last_name = last_name
     if avatar_url is not None:
         user.avatar_url = avatar_url
-    if team_name is not None:
-        user.team_name = team_name
-
     db.commit()
     db.refresh(user)
     return user
@@ -40,6 +36,7 @@ def update_profile(
 def get_leaderboard(db: Session = Depends(get_db)):
     users = (
         db.query(User)
+        .filter(User.role == "USER")
         .order_by(desc(User.rating_points), User.id)
         .limit(100)
         .all()
@@ -54,8 +51,7 @@ def get_leaderboard(db: Session = Depends(get_db)):
                 last_name=u.last_name or f"#{u.id}",
                 avatar_url=u.avatar_url,
                 rating_points=u.rating_points,
-                rank=rank,
-                team_name=u.team_name
+                rank=rank
             )
         )
     return result

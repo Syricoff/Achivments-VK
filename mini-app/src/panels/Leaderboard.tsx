@@ -11,33 +11,33 @@ interface LeaderboardProps {
 export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) => {
   // Extract top 3 participants
   const top1 = leaderboard.find((u) => u.rank === 1) || {
-    id: 1,
-    vk_id: 10002,
-    first_name: 'ЕКАТЕРИНА',
-    last_name: 'СМИРНОВА',
-    rating_points: 1000,
+    id: -1,
+    vk_id: 0,
+    first_name: '',
+    last_name: '',
+    rating_points: 0,
     rank: 1,
   };
 
   const top2 = leaderboard.find((u) => u.rank === 2) || {
-    id: 2,
-    vk_id: 10001,
-    first_name: 'АЛЕКСЕЙ',
-    last_name: 'ИВАНОВ',
-    rating_points: 900,
+    id: -2,
+    vk_id: 0,
+    first_name: '',
+    last_name: '',
+    rating_points: 0,
     rank: 2,
   };
 
   const top3 = leaderboard.find((u) => u.rank === 3) || {
-    id: 3,
-    vk_id: 10003,
-    first_name: 'ДМИТРИЙ',
-    last_name: 'СОКОЛОВ',
-    rating_points: 800,
+    id: -3,
+    vk_id: 0,
+    first_name: '',
+    last_name: '',
+    rating_points: 0,
     rank: 3,
   };
 
-  const restUsers = leaderboard.filter((u) => u.rank > 3);
+  const restUsers = leaderboard.filter((u) => leaderboard.length < 3 || u.rank > 3);
 
   return (
     <div className="screen-container">
@@ -108,7 +108,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
         </h2>
 
         {/* 3 Pedestal Circles */}
-        <div style={{
+        {leaderboard.length >= 3 && <div style={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'flex-end',
@@ -295,7 +295,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
               {top3.rating_points}
             </div>
           </div>
-        </div>
+        </div>}
       </section>
 
       {/* Participants List (4th Place and below) */}
@@ -305,6 +305,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
         gap: '14px',
         paddingTop: '6px',
       }}>
+        {leaderboard.length === 0 && (
+          <div style={{ color: '#FFFFFF', textAlign: 'center', fontWeight: 700 }}>
+            Зарегистрированных участников пока нет
+          </div>
+        )}
         {restUsers.map((item) => {
           const isCurrentUser = item.vk_id === user.vk_id || item.id === user.id;
           return (

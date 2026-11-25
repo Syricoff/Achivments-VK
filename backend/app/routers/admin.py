@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import cast, desc, String
 
 from ..database import get_db
 from ..models import User, Task, Submission, QRCode, ShopItem, Order
@@ -66,7 +66,7 @@ def review_submission(
     db.refresh(submission)
     return submission
 
-# 2. Manual and Group Points Grant
+# 2. Individual points grant
 @router.post("/points/grant")
 def grant_points(
     payload: PointsGrantRequest,
@@ -76,31 +76,26 @@ def grant_points(
     if payload.points <= 0:
         raise HTTPException(status_code=400, detail="Количество баллов должно быть больше 0")
 
-    awarded_users = []
-    if payload.user_id:
-        user = db.query(User).filter(User.id == payload.user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="Пользователь не найден")
-        user.rating_points += payload.points
-        user.spendable_points += payload.points
-        awarded_users.append(f"{user.first_name} {user.last_name}")
+    user = db.query(User).filter(User.id == payload.user_id, User.role == "USER").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Участник не найден")
 
-    elif payload.team_name:
-        users = db.query(User).filter(User.team_name == payload.team_name).all()
-        if not users:
-            raise HTTPException(status_code=404, detail=f"Участники в команде '{payload.team_name}' не найдены")
-        for u in users:
-            u.rating_points += payload.points
-            u.spendable_points += payload.points
-            awarded_users.append(f"{u.first_name} {u.last_name}")
-    else:
-        raise HTTPException(status_code=400, detail="Необходимо указать user_id или team_name")
+    user.rating_points += payload.points
+    user.spendable_points += payload.points
+    participant_name = f"{user.first_name} {user.last_name}".strip() or f"VK ID {user.vk_id}"
 
     db.commit()
     return {
         "success": True,
-        "message": f"Начислено +{payload.points} баллов ({payload.reason})",
-        "affected_users": awarded_users
+        "message": f"{participant_name} (VK ID {user.vk_id}): +{payload.points} баллов. {payload.reason}",
+        "affected_user": {
+            "id": user.id,
+            "vk_id": user.vk_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "rating_points": user.rating_points,
+            "spendable_points": user.spendable_points,
+        },
     }
 
 @router.post("/points/random-lucky")
@@ -113,9 +108,11 @@ def pick_random_lucky(
     """
     Chooses random participants for the 'Счастливчик дня' daily challenge.
     """
-    all_users = db.query(User).all()
+    all_users = db.query(User).filter(User.role == "USER").all()
     if not all_users:
         raise HTTPException(status_code=400, detail="Нет зарегистрированных участников")
+    if points <= 0 or count <= 0:
+        raise HTTPException(status_code=400, detail="Количество участников и баллов должно быть больше 0")
 
     lucky_count = min(count, len(all_users))
     selected = random.sample(all_users, lucky_count)
@@ -238,10 +235,11 @@ def admin_list_users(
     db: Session = Depends(get_db)
 ):
     q = db.query(User)
+    q = q.filter(User.role == "USER")
     if query:
         q = q.filter(
             (User.first_name.ilike(f"%{query}%")) | 
             (User.last_name.ilike(f"%{query}%")) |
-            (User.team_name.ilike(f"%{query}%"))
+            (cast(User.vk_id, String).ilike(f"%{query}%"))
         )
-    return q.order_by(desc(User.rating_points)).all()
+    return q.order_by(User.last_name, User.first_name, User.id).all()

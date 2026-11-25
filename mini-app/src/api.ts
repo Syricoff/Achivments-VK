@@ -199,58 +199,16 @@ const INITIAL_SHOP_ITEMS: ShopItem[] = [
 ];
 
 const INITIAL_USER: User = {
-  id: 1,
-  vk_id: 10001,
-  first_name: 'Алексей',
-  last_name: 'Иванов',
-  avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-  role: 'ADMIN',
-  rating_points: 900,
-  spendable_points: 900,
-  team_name: 'Отряд 1',
+  id: 0,
+  vk_id: 0,
+  first_name: '',
+  last_name: '',
+  role: 'USER',
+  rating_points: 0,
+  spendable_points: 0,
 };
 
-const INITIAL_LEADERBOARD: LeaderboardUser[] = [
-  {
-    id: 2,
-    vk_id: 10002,
-    first_name: 'ЕКАТЕРИНА',
-    last_name: 'СМИРНОВА',
-    rating_points: 1000,
-    rank: 1,
-    avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-    team_name: 'Отряд 2',
-  },
-  {
-    id: 1,
-    vk_id: 10001,
-    first_name: 'АЛЕКСЕЙ',
-    last_name: 'ИВАНОВ',
-    rating_points: 900,
-    rank: 2,
-    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-    team_name: 'Отряд 1',
-  },
-  {
-    id: 3,
-    vk_id: 10003,
-    first_name: 'ДМИТРИЙ',
-    last_name: 'СОКОЛОВ',
-    rating_points: 800,
-    rank: 3,
-    avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
-    team_name: 'Отряд 1',
-  },
-  { id: 4, vk_id: 10004, first_name: 'АННА', last_name: 'КУЗНЕЦОВА', rating_points: 150, rank: 4 },
-  { id: 5, vk_id: 10005, first_name: 'МИХАИЛ', last_name: 'ПОПОВ', rating_points: 150, rank: 5 },
-  { id: 6, vk_id: 10006, first_name: 'ПОЛИНА', last_name: 'ВАСИЛЬЕВА', rating_points: 150, rank: 6 },
-  { id: 7, vk_id: 10007, first_name: 'ИВАН', last_name: 'ПЕТРОВ', rating_points: 150, rank: 7 },
-  { id: 8, vk_id: 10008, first_name: 'СОФИЯ', last_name: 'НОВИКОВА', rating_points: 150, rank: 8 },
-  { id: 9, vk_id: 10009, first_name: 'АРТЕМ', last_name: 'ФЕДОРОВ', rating_points: 150, rank: 9 },
-  { id: 10, vk_id: 10010, first_name: 'МАРИЯ', last_name: 'МОРОЗОВА', rating_points: 150, rank: 10 },
-  { id: 11, vk_id: 10011, first_name: 'НИКИТА', last_name: 'ВОЛКОВ', rating_points: 150, rank: 11 },
-  { id: 12, vk_id: 10012, first_name: 'ДАРЬЯ', last_name: 'АЛЕКСЕЕВА', rating_points: 150, rank: 12 },
-];
+const INITIAL_LEADERBOARD: LeaderboardUser[] = [];
 
 // Local storage helpers for mock engine
 const STORAGE_KEYS = {
@@ -660,46 +618,29 @@ export const api = {
   },
 
   // Admin APIs
+  async getAdminUsers(): Promise<User[]> {
+    if (!(await isBackendAlive())) throw new Error('Сервер участников недоступен');
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+      headers: { Authorization: `Bearer ${searchParams}` },
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось загрузить список участников');
+    }
+    return res.json();
+  },
+
   async getAdminSubmissions(filter?: string): Promise<Submission[]> {
-    if (await isBackendAlive()) {
-      try {
-        const url = filter ? `${API_BASE_URL}/api/admin/submissions?status_filter=${filter}` : `${API_BASE_URL}/api/admin/submissions`;
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${searchParams}` } });
-        if (res.ok) return await res.json();
-      } catch (e) {
-        console.warn('Backend getAdminSubmissions failed', e);
-      }
-    }
+    if (!(await isBackendAlive())) throw new Error('Сервер модерации недоступен');
 
-    const subs = getStorage<Submission[]>(STORAGE_KEYS.SUBMISSIONS, [
-      {
-        id: 101,
-        user_id: 4,
-        task_id: 7,
-        proof_image_urls: ['https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80'],
-        comment: 'Вот мем про утреннюю зарядку и лекции!',
-        status: 'PENDING',
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-        user: { id: 4, vk_id: 10004, first_name: 'Анна', last_name: 'Кузнецова', role: 'USER', rating_points: 150, spendable_points: 150 },
-        task: {
-          id: 7,
-          title: '«МЕМНЫЙ ЧЕЛ»',
-          description: 'Сделай мем связанный с лагерем',
-          points: 30,
-          frequency: 'DAILY',
-          task_type: 'SCREENSHOT',
-          is_active: true,
-          order_num: 7,
-          user_status: 'PENDING',
-          can_submit: false,
-        },
-      },
-    ]);
-
-    if (filter) {
-      return subs.filter((s) => s.status === filter);
+    const url = filter ? `${API_BASE_URL}/api/admin/submissions?status_filter=${filter}` : `${API_BASE_URL}/api/admin/submissions`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${searchParams}` } });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось загрузить заявки');
     }
-    return subs;
+    return res.json();
   },
 
   async reviewSubmission(submissionId: number, status: 'APPROVED' | 'REJECTED', adminComment?: string): Promise<void> {
@@ -738,49 +679,34 @@ export const api = {
     }
   },
 
-  async grantPoints(userId: number, points: number, reason: string): Promise<void> {
-    if (await isBackendAlive()) {
-      try {
-        await fetch(`${API_BASE_URL}/api/admin/points/grant`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${searchParams}` },
-          body: JSON.stringify({ user_id: userId, points, reason }),
-        });
-        return;
-      } catch (e) {
-        console.warn('Backend grant failed', e);
-      }
-    }
+  async grantPoints(userId: number, points: number, reason: string): Promise<{ message: string }> {
+    if (!(await isBackendAlive())) throw new Error('Сервер начисления недоступен');
 
-    const user = await this.getMe();
-    user.rating_points += points;
-    user.spendable_points += points;
-    setStorage(STORAGE_KEYS.USER, user);
+    const res = await fetch(`${API_BASE_URL}/api/admin/points/grant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${searchParams}` },
+      body: JSON.stringify({ user_id: userId, points, reason }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось начислить баллы');
+    }
+    return res.json();
   },
 
   async pickLuckyRandom(): Promise<string[]> {
-    if (await isBackendAlive()) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/admin/points/random-lucky`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${searchParams}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          return data.winners;
-        }
-      } catch (e) {
-        console.warn('Backend random lucky failed', e);
-      }
-    }
+    if (!(await isBackendAlive())) throw new Error('Сервер выбора участников недоступен');
 
-    // Mock 5 random lucky winners
-    const winners = ['Анна Кузнецова', 'Михаил Попов', 'Полина Васильева', 'Иван Петров', 'София Новикова'];
-    const user = await this.getMe();
-    user.rating_points += 50;
-    user.spendable_points += 50;
-    setStorage(STORAGE_KEYS.USER, user);
-    return winners;
+    const res = await fetch(`${API_BASE_URL}/api/admin/points/random-lucky`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${searchParams}` },
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось выбрать участников');
+    }
+    const data = await res.json();
+    return data.winners;
   },
 
   async generateQRCodes(count: number = 1): Promise<QRCodeItem[]> {

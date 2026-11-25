@@ -18,7 +18,6 @@ class User(Base):
     role = Column(String(20), default="USER") # "USER" | "ADMIN"
     rating_points = Column(Integer, default=0, index=True) # Total points for leaderboard
     spendable_points = Column(Integer, default=0) # Balance available for spending in shop
-    team_name = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     submissions = relationship("Submission", foreign_keys="Submission.user_id", back_populates="user")

@@ -18,15 +18,13 @@ export const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const [currentUser, setCurrentUser] = useState<User>({
-    id: 1,
-    vk_id: 10001,
-    first_name: 'Алексей',
-    last_name: 'Иванов',
-    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-    role: 'ADMIN',
-    rating_points: 900,
-    spendable_points: 900,
-    team_name: 'Отряд 1',
+    id: 0,
+    vk_id: 0,
+    first_name: '',
+    last_name: '',
+    role: 'USER',
+    rating_points: 0,
+    spendable_points: 0,
   });
 
   const [tasks, setTasks] = useState<Task[]>([]);

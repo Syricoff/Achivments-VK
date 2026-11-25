@@ -9,7 +9,6 @@ export interface User {
   role: UserRole;
   rating_points: number;
   spendable_points: number;
-  team_name?: string | null;
 }
 
 export type TaskFrequency = 'ONCE' | 'DAILY';
@@ -87,5 +86,4 @@ export interface LeaderboardUser {
   avatar_url?: string | null;
   rating_points: number;
   rank: number;
-  team_name?: string | null;
 }
