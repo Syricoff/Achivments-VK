@@ -93,13 +93,17 @@ Swagger-документация доступна по адресу `http://loca
 
 ### Вариант 3. Развертывание через Docker Compose (Production)
 
+Frontend собирается до развёртывания, а не внутри контейнера хостинга:
+
 ```bash
-docker-compose up --build -d
+cd mini-app
+npm ci
+npm run build
+cd ..
+docker compose up -d --build
 ```
-Сервисы:
-* Frontend (Nginx): `http://localhost:3000`
-* Backend (FastAPI): `http://localhost:8000`
-* PostgreSQL: `localhost:5432`
+
+Каталог `mini-app/build/` должен попасть в репозиторий и на сервер вместе с кодом. Контейнер frontend — только лёгкий Nginx-сервер готовых файлов и не требует Node.js или сборки на хостинге.
 
 ---
 

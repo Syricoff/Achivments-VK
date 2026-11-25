@@ -1,6 +1,6 @@
 import { User, Task, ShopItem, Order, QRCodeItem, LeaderboardUser, Submission } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Check if launch params or sign header is in URL
 const searchParams = window.location.search;

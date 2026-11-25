@@ -36,12 +36,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-mini-app/build/
+# ! Production-ready frontend artifacts are deliberately tracked
+# mini-app/build/ and build/ exclusions above are overridden here
 mini-app/dist/
-mini-app/.vite/
-mini-app/.vite-temp/
-build/
-dist/
 
 # =========================
 # Python & Backend
