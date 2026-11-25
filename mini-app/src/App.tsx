@@ -79,7 +79,7 @@ export const App = () => {
         // Try to fetch real VK user info if inside VK environment (with timeout fallback for standalone browser)
         try {
           const fetchVkUser = bridge.send('VKWebAppGetUserInfo');
-          const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('VKBridge timeout')), 400));
+          const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('VKBridge timeout')), 5000));
           const vkUser: UserInfo = await Promise.race([fetchVkUser, timeout]);
           if (vkUser && vkUser.id) {
             await api.updateMe({
@@ -89,7 +89,8 @@ export const App = () => {
               avatar_url: vkUser.photo_200 || vkUser.photo_100,
             });
           }
-        } catch {
+        } catch (error) {
+          console.warn('Could not fetch VK profile with VK Bridge', error);
           // Running in browser outside VK, gracefully fall back to mock
         }
 

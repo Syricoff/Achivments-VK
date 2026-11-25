@@ -330,6 +330,7 @@ export const api = {
           setStorage(STORAGE_KEYS.USER, savedUser);
           return savedUser;
         }
+        console.warn('Backend profile update failed with status', res.status);
       } catch (e) {
         console.warn('Backend profile update failed, using storage', e);
       }
