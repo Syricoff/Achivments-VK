@@ -2,12 +2,9 @@
 Seed script for VK Mini App «ЛАМПА 2026»
 Fills database with 12 tasks, 5 merchandise items, demo leaderboard users, and test QR codes.
 """
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.app.database import SessionLocal, engine, Base
-from backend.app.models import User, Task, ShopItem, QRCode, Submission
+from app.database import Base, SessionLocal, engine
+from app.models import QRCode, ShopItem, Submission, Task, User
 
 def run_seed():
     Base.metadata.create_all(bind=engine)
@@ -216,7 +213,6 @@ def run_seed():
     print(f"✅ QR codes seeded: {len(qr_data)}")
 
     # 5. Seed a pending submission for admin moderation demonstration
-    admin_user = db.query(User).filter(User.role == "ADMIN").first()
     sub_user = db.query(User).filter(User.vk_id == 10004).first()
     task_mem = db.query(Task).filter(Task.title == "«Мемный чел»").first()
     if sub_user and task_mem:

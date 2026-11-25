@@ -29,7 +29,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://lampa_user:lampa_password@db:5432/lampa_db
+      DATABASE_URL: postgresql+psycopg2://lampa_user:lampa_password@db:5432/lampa_db
       VK_APP_ID: ${VK_APP_ID:-0}
       VK_APP_SECRET: ${VK_APP_SECRET:-test_vk_secret_key}
       ENV: production
