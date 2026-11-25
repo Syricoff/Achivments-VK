@@ -98,16 +98,15 @@ def get_current_user(
             last_name=params.get("last_name", "Лагеря"),
             avatar_url=params.get("avatar_url", None),
             role=role,
-            rating_points=900 if vk_id_int == 10001 else 0,
-            spendable_points=900 if vk_id_int == 10001 else 0,
+            rating_points=0,
+            spendable_points=0,
         )
         db.add(user)
         db.commit()
         db.refresh(user)
     else:
-        # If user became admin in VK
-        if is_admin and user.role != "ADMIN":
-            user.role = "ADMIN"
+        if user.role != role:
+            user.role = role
             db.commit()
             db.refresh(user)
 

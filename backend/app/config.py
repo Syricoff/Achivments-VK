@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     # VK Mini App Settings
     VK_APP_ID: int = 0
     VK_APP_SECRET: str = "test_vk_secret_key"
-    ADMIN_VK_IDS: List[int] = [1, 2, 3] # VK IDs with default admin rights
+    ADMIN_VK_IDS: List[int] = []
     
     # Database
     # Default to SQLite for easy zero-setup local running, PostgreSQL for production

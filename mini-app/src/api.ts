@@ -313,6 +313,28 @@ export const api = {
     const user = await this.getMe();
     const updated = { ...user, ...data };
     setStorage(STORAGE_KEYS.USER, updated);
+
+    if (await isBackendAlive()) {
+      const profile = new URLSearchParams();
+      if (data.first_name !== undefined) profile.set('first_name', data.first_name);
+      if (data.last_name !== undefined) profile.set('last_name', data.last_name);
+      if (data.avatar_url !== undefined && data.avatar_url !== null) profile.set('avatar_url', data.avatar_url);
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/me?${profile.toString()}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${searchParams}` },
+        });
+        if (res.ok) {
+          const savedUser = await res.json();
+          setStorage(STORAGE_KEYS.USER, savedUser);
+          return savedUser;
+        }
+      } catch (e) {
+        console.warn('Backend profile update failed, using storage', e);
+      }
+    }
+
     return updated;
   },
 
