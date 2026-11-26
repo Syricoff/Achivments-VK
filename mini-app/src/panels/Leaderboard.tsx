@@ -82,7 +82,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
         {/* Official Sticker Illustration from Figma Mockup */}
         <div style={{ position: 'relative' }}>
           <img
-            src="/assets/clipboard.png"
+            src="/assets/icon.svg"
             alt="Лампа 2026 Чеклист"
             style={{
               width: '104px',

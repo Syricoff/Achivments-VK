@@ -2,6 +2,7 @@ import vkBridge, { parseURLSearchParamsForGetLaunchParams } from '@vkontakte/vk-
 import { useAdaptivity, useAppearance, useInsets } from '@vkontakte/vk-bridge-react';
 import { AdaptivityProvider, ConfigProvider, AppRoot } from '@vkontakte/vkui';
 import { RouterProvider } from '@vkontakte/vk-mini-apps-router';
+import type { CSSProperties } from 'react';
 import '@vkontakte/vkui/dist/vkui.css';
 
 import { transformVKBridgeAdaptivity } from './utils';
@@ -13,6 +14,12 @@ export const AppConfig = () => {
   const vkBridgeInsets = useInsets() || undefined;
   const adaptivity = transformVKBridgeAdaptivity(useAdaptivity());
   const { vk_platform } = parseURLSearchParamsForGetLaunchParams(window.location.search);
+  const safeAreaStyle = {
+    '--vk-safe-area-top': `${vkBridgeInsets?.top ?? 0}px`,
+    '--vk-safe-area-right': `${vkBridgeInsets?.right ?? 0}px`,
+    '--vk-safe-area-bottom': `${vkBridgeInsets?.bottom ?? 0}px`,
+    '--vk-safe-area-left': `${vkBridgeInsets?.left ?? 0}px`,
+  } as CSSProperties;
 
   return (
     <ConfigProvider
@@ -23,9 +30,11 @@ export const AppConfig = () => {
     >
       <AdaptivityProvider {...adaptivity}>
         <AppRoot mode="full" safeAreaInsets={vkBridgeInsets}>
-          <RouterProvider router={router}>
-            <App />
-          </RouterProvider>
+          <div className="vk-safe-area-root" style={safeAreaStyle}>
+            <RouterProvider router={router}>
+              <App />
+            </RouterProvider>
+          </div>
         </AppRoot>
       </AdaptivityProvider>
     </ConfigProvider>
