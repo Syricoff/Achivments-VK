@@ -762,6 +762,23 @@ export const api = {
     ]);
   },
 
+  async deleteQRCode(qrId: number): Promise<void> {
+    if (await isBackendAlive()) {
+      const res = await fetch(`${API_BASE_URL}/api/admin/qr/${qrId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${searchParams}` },
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.detail || 'Не удалось удалить QR-код');
+      }
+      return;
+    }
+
+    const qrList = getStorage<QRCodeItem[]>(STORAGE_KEYS.QR, []);
+    setStorage(STORAGE_KEYS.QR, qrList.filter((qr) => qr.id !== qrId));
+  },
+
   async getAdminOrders(): Promise<Order[]> {
     return getStorage<Order[]>(STORAGE_KEYS.ORDERS, []);
   },

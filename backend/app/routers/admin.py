@@ -156,6 +156,16 @@ def generate_qr_codes(
 def list_qr_codes(db: Session = Depends(get_db)):
     return db.query(QRCode).order_by(desc(QRCode.created_at)).all()
 
+@router.delete("/qr/{qr_id}")
+def delete_qr_code(qr_id: int, db: Session = Depends(get_db)):
+    qr = db.query(QRCode).filter(QRCode.id == qr_id).first()
+    if not qr:
+        raise HTTPException(status_code=404, detail="QR-код не найден")
+
+    db.delete(qr)
+    db.commit()
+    return {"success": True}
+
 # 4. Orders and Shop Management
 @router.get("/orders", response_model=List[OrderResponse])
 def list_orders(

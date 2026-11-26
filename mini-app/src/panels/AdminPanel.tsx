@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import bridge from '@vkontakte/vk-bridge';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   Icon20SparkleOutline,
@@ -154,7 +155,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
     }
   };
 
-  const handleDownloadQR = (qr: QRCodeItem) => {
+  const handleDownloadQR = async (qr: QRCodeItem) => {
     const svg = document.getElementById(`qr-code-${qr.id}`);
     if (!(svg instanceof SVGSVGElement)) return;
 
@@ -163,6 +164,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
     const svgMarkup = new XMLSerializer().serializeToString(downloadableSvg);
     const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
+
+    if (bridge.supports('VKWebAppDownloadFile')) {
+      try {
+        await bridge.send('VKWebAppDownloadFile', { url, filename: `${qr.code_hash}.svg` });
+        window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+        return;
+      } catch (e) {
+        console.warn('VK Bridge QR download failed, using browser download', e);
+      }
+    }
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `${qr.code_hash}.svg`;
@@ -171,6 +183,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  const handleDeleteQR = async (qr: QRCodeItem) => {
+    if (!window.confirm(`Удалить QR-код ${qr.code_hash}?`)) return;
+
+    try {
+      await api.deleteQRCode(qr.id);
+      setQrList((current) => current.filter((item) => item.id !== qr.id));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось удалить QR-код');
+    }
   };
 
   // Deliver order
@@ -686,6 +709,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                     }}
                   >
                     Скачать QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteQR(qr)}
+                    style={{
+                      marginTop: '8px',
+                      marginLeft: '6px',
+                      padding: '7px 10px',
+                      border: '1px solid #FECACA',
+                      borderRadius: '8px',
+                      backgroundColor: '#FEF2F2',
+                      color: '#B91C1C',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Удалить
                   </button>
                 </div>
                 <div style={{ flexShrink: 0, backgroundColor: '#FFFFFF', padding: '4px' }}>
