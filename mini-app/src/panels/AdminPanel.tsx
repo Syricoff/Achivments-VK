@@ -158,14 +158,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
     const svg = document.getElementById(`qr-code-${qr.id}`);
     if (!(svg instanceof SVGSVGElement)) return;
 
-    const svgMarkup = new XMLSerializer().serializeToString(svg);
+    const downloadableSvg = svg.cloneNode(true) as SVGSVGElement;
+    downloadableSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const svgMarkup = new XMLSerializer().serializeToString(downloadableSvg);
     const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `${qr.code_hash}.svg`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
     link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
   // Deliver order
@@ -680,7 +685,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                       cursor: 'pointer',
                     }}
                   >
-                    Скачать SVG
+                    Скачать QR
                   </button>
                 </div>
                 <div style={{ flexShrink: 0, backgroundColor: '#FFFFFF', padding: '4px' }}>
