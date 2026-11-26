@@ -11,7 +11,7 @@ from ..models import User, Task, Submission, QRCode, ShopItem, Order
 from ..schemas import (
     SubmissionResponse, SubmissionReview,
     PointsGrantRequest, QRGenerateRequest, QRCodeResponse,
-    OrderResponse, ShopItemResponse, ShopItemCreate, ShopItemUpdate,
+    OrderResponse, OrderDeliveryRequest, ShopItemResponse, ShopItemCreate, ShopItemUpdate,
     TaskResponse, TaskCreate, TaskUpdate, UserResponse
 )
 from ..auth import require_admin
@@ -88,6 +88,42 @@ def grant_points(
     return {
         "success": True,
         "message": f"{participant_name} (VK ID {user.vk_id}): +{payload.points} баллов. {payload.reason}",
+        "affected_user": {
+            "id": user.id,
+            "vk_id": user.vk_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "rating_points": user.rating_points,
+            "spendable_points": user.spendable_points,
+        },
+    }
+
+@router.post("/points/deduct")
+def deduct_points(
+    payload: PointsGrantRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    if payload.points <= 0:
+        raise HTTPException(status_code=400, detail="Количество баллов должно быть больше 0")
+
+    user = db.query(User).filter(User.id == payload.user_id, User.role == "USER").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Участник не найден")
+    if payload.points > user.rating_points:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Нельзя снять больше баллов, чем есть у участника ({user.rating_points})",
+        )
+
+    user.rating_points -= payload.points
+    user.spendable_points = max(0, user.spendable_points - payload.points)
+    participant_name = f"{user.first_name} {user.last_name}".strip() or f"VK ID {user.vk_id}"
+
+    db.commit()
+    return {
+        "success": True,
+        "message": f"{participant_name} (VK ID {user.vk_id}): -{payload.points} баллов. {payload.reason}",
         "affected_user": {
             "id": user.id,
             "vk_id": user.vk_id,
@@ -178,11 +214,41 @@ def list_orders(
     return query.order_by(desc(Order.created_at)).all()
 
 @router.post("/orders/{order_id}/deliver", response_model=OrderResponse)
-def deliver_order(order_id: int, db: Session = Depends(get_db)):
-    order = db.query(Order).filter(Order.id == order_id).first()
+def deliver_order(
+    order_id: int,
+    payload: OrderDeliveryRequest,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Order).filter(Order.id == order_id)
+    if db.bind.dialect.name != "sqlite":
+        query = query.with_for_update()
+    order = query.first()
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
+    if order.status != "PENDING_PICKUP":
+        raise HTTPException(status_code=400, detail="Заказ уже обработан")
+    if order.pickup_code.strip().upper() != payload.pickup_code.strip().upper():
+        raise HTTPException(status_code=400, detail="Код выдачи не совпадает")
+
     order.status = "DELIVERED"
+    db.commit()
+    db.refresh(order)
+    return order
+
+@router.post("/orders/{order_id}/reject", response_model=OrderResponse)
+def reject_order(order_id: int, db: Session = Depends(get_db)):
+    query = db.query(Order).filter(Order.id == order_id)
+    if db.bind.dialect.name != "sqlite":
+        query = query.with_for_update()
+    order = query.first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    if order.status != "PENDING_PICKUP":
+        raise HTTPException(status_code=400, detail="Заказ уже обработан")
+
+    order.status = "CANCELLED"
+    order.user.spendable_points += order.price_paid
+    order.item.stock += 1
     db.commit()
     db.refresh(order)
     return order

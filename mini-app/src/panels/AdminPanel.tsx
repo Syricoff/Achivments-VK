@@ -36,6 +36,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   const [participantsError, setParticipantsError] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [grantPoints, setGrantPoints] = useState<number>(50);
+  const [pointsAction, setPointsAction] = useState<'GRANT' | 'DEDUCT'>('GRANT');
   const [grantReason, setGrantReason] = useState<string>('Активность на лекции («Самый умный»)');
   const [grantMessage, setGrantMessage] = useState<string | null>(null);
   const [luckyWinners, setLuckyWinners] = useState<string[]>([]);
@@ -46,6 +47,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
 
   // Orders state
   const [orders, setOrders] = useState<Order[]>([]);
+  const [pickupCodes, setPickupCodes] = useState<Record<number, string>>({});
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
 
   // Tasks CRUD state
@@ -55,6 +57,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   useEffect(() => {
     loadData();
   }, [activeTab, subFilter]);
+
+  useEffect(() => {
+    if (activeTab !== 'ORDERS') return;
+
+    const intervalId = window.setInterval(() => {
+      api.getAdminOrders().then(setOrders).catch((error) => {
+        console.error('Error refreshing admin orders', error);
+      });
+    }, 10000);
+
+    return () => window.clearInterval(intervalId);
+  }, [activeTab]);
 
   const loadData = async () => {
     try {
@@ -118,7 +132,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
     }
 
     try {
-      const result = await api.grantPoints(selectedUserId, grantPoints, grantReason);
+      const result = pointsAction === 'GRANT'
+        ? await api.grantPoints(selectedUserId, grantPoints, grantReason)
+        : await api.deductPoints(selectedUserId, grantPoints, grantReason);
       setGrantMessage(result.message);
       onPointsChanged();
       try {
@@ -197,9 +213,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   };
 
   // Deliver order
-  const handleDeliver = async (orderId: number) => {
-    await api.deliverOrder(orderId);
-    loadData();
+  const handleDeliver = async (order: Order) => {
+    const pickupCode = pickupCodes[order.id]?.trim();
+    if (!pickupCode) {
+      alert('Введите код, который назвал участник');
+      return;
+    }
+
+    try {
+      await api.deliverOrder(order.id, pickupCode);
+      setPickupCodes((current) => ({ ...current, [order.id]: '' }));
+      await loadData();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось подтвердить выдачу');
+    }
+  };
+
+  const handleRejectOrder = async (order: Order) => {
+    if (!window.confirm(`Отклонить заказ ${order.item?.title ?? ''}? Баллы будут возвращены участнику.`)) return;
+
+    try {
+      await api.rejectOrder(order.id);
+      await loadData();
+      onPointsChanged();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось отклонить заказ');
+    }
   };
 
   // Stock edit
@@ -506,12 +545,39 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <Icon24Flash width={20} height={20} style={{ color: '#F59E0B' }} />
               <h3 style={{ fontSize: '16px', fontWeight: 900, color: 'var(--blue-text)' }}>
-                Прямое начисление баллов
+                Управление баллами участника
               </h3>
             </div>
             <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '14px' }}>
               Используется для заданий лекторов («Самый умный»), зарядки («GYM-бро»), вечерних мероприятий («Живые легенды»).
             </p>
+
+            <div role="group" aria-label="Действие с баллами" style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+              {[
+                { id: 'GRANT', label: 'Начислить' },
+                { id: 'DEDUCT', label: 'Снять' },
+              ].map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={() => setPointsAction(action.id as 'GRANT' | 'DEDUCT')}
+                  aria-pressed={pointsAction === action.id}
+                  style={{
+                    flex: 1,
+                    padding: '9px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: pointsAction === action.id ? (action.id === 'DEDUCT' ? '#DC2626' : 'var(--blue-text)') : '#F3F4F6',
+                    color: pointsAction === action.id ? '#FFFFFF' : '#374151',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
 
             <div style={{ marginBottom: '12px' }}>
               <label htmlFor="participant-search" style={{ fontSize: '12px', fontWeight: 700, color: '#374151', display: 'block', marginBottom: '4px' }}>
@@ -564,19 +630,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                     key={pts}
                     type="button"
                     onClick={() => setGrantPoints(pts)}
+                    disabled={pointsAction === 'DEDUCT' && pts > (participants.find((participant) => participant.id === selectedUserId)?.rating_points ?? 0)}
                     style={{
                       flex: 1,
                       padding: '8px 4px',
                       borderRadius: '8px',
                       border: 'none',
-                      backgroundColor: grantPoints === pts ? 'var(--pink-accent)' : '#F3F4F6',
+                      backgroundColor: grantPoints === pts ? (pointsAction === 'DEDUCT' ? '#DC2626' : 'var(--pink-accent)') : '#F3F4F6',
                       color: grantPoints === pts ? '#FFFFFF' : '#374151',
                       fontWeight: 800,
                       fontSize: '12px',
-                      cursor: 'pointer',
+                      cursor: pointsAction === 'DEDUCT' && pts > (participants.find((participant) => participant.id === selectedUserId)?.rating_points ?? 0) ? 'not-allowed' : 'pointer',
+                      opacity: pointsAction === 'DEDUCT' && pts > (participants.find((participant) => participant.id === selectedUserId)?.rating_points ?? 0) ? 0.45 : 1,
                     }}
                   >
-                    +{pts}
+                    {pointsAction === 'DEDUCT' ? `-${pts}` : `+${pts}`}
                   </button>
                 ))}
               </div>
@@ -602,26 +670,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
 
             <button
               onClick={handleGrant}
-              disabled={selectedUserId === null}
+              disabled={selectedUserId === null || (pointsAction === 'DEDUCT' && grantPoints > (participants.find((participant) => participant.id === selectedUserId)?.rating_points ?? 0))}
               style={{
                 width: '100%',
                 padding: '12px',
                 borderRadius: '12px',
                 border: 'none',
-                backgroundColor: 'var(--blue-text)',
+                backgroundColor: pointsAction === 'DEDUCT' ? '#DC2626' : 'var(--blue-text)',
                 color: '#FFFFFF',
                 fontWeight: 900,
                 fontSize: '13px',
                 textTransform: 'uppercase',
-                cursor: selectedUserId === null ? 'not-allowed' : 'pointer',
-                opacity: selectedUserId === null ? 0.6 : 1,
+                cursor: selectedUserId === null || (pointsAction === 'DEDUCT' && grantPoints > (participants.find((participant) => participant.id === selectedUserId)?.rating_points ?? 0)) ? 'not-allowed' : 'pointer',
+                opacity: selectedUserId === null || (pointsAction === 'DEDUCT' && grantPoints > (participants.find((participant) => participant.id === selectedUserId)?.rating_points ?? 0)) ? 0.6 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
               }}
             >
-              <span>НАЧИСЛИТЬ БАЛЛЫ</span>
+              <span>{pointsAction === 'DEDUCT' ? 'СНЯТЬ БАЛЛЫ' : 'НАЧИСЛИТЬ БАЛЛЫ'}</span>
               <Icon20SendOutline width={18} height={18} />
             </button>
 
@@ -825,41 +893,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                     borderRadius: '12px',
                     backgroundColor: '#F9FAFB',
                     marginBottom: '8px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 800 }}>{o.item?.title}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--pink-accent)', fontWeight: 800 }}>
-                      Код: {o.pickup_code}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 800 }}>{o.item?.title || 'Товар'}</div>
+                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '3px' }}>
+                        Участник: {`${o.user?.first_name ?? ''} ${o.user?.last_name ?? ''}`.trim() || `ID ${o.user_id}`}
+                        {o.user?.vk_id ? ` · VK ID ${o.user.vk_id}` : ''}
+                      </div>
                     </div>
+                    <span style={{ fontSize: '11px', color: '#6B7280', whiteSpace: 'nowrap' }}>
+                      {o.price_paid} б.
+                    </span>
                   </div>
-                  <div>
-                    {o.status === 'DELIVERED' ? (
-                      <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                        <span>Выдано</span>
-                        <Icon16Done width={12} height={12} />
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleDeliver(o.id)}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          backgroundColor: 'var(--pink-accent)',
-                          color: '#FFFFFF',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Выдать заказ
-                      </button>
-                    )}
-                  </div>
+                  {o.status === 'PENDING_PICKUP' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                      <input
+                        type="text"
+                        value={pickupCodes[o.id] ?? ''}
+                        onChange={(event) => setPickupCodes((current) => ({ ...current, [o.id]: event.target.value.toUpperCase() }))}
+                        placeholder="Введите код, названный участником"
+                        aria-label={`Код выдачи заказа ${o.id}`}
+                        autoCapitalize="characters"
+                        style={{ width: '100%', padding: '9px 10px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '13px' }}
+                      />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleDeliver(o)}
+                          disabled={!pickupCodes[o.id]?.trim()}
+                          style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', backgroundColor: '#16A34A', color: '#FFFFFF', fontSize: '11px', fontWeight: 800, cursor: pickupCodes[o.id]?.trim() ? 'pointer' : 'not-allowed', opacity: pickupCodes[o.id]?.trim() ? 1 : 0.6 }}
+                        >
+                          Подтвердить выдачу
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectOrder(o)}
+                          style={{ padding: '8px 12px', border: '1px solid #FECACA', borderRadius: '8px', backgroundColor: '#FEF2F2', color: '#B91C1C', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                        >
+                          Отклонить
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: o.status === 'DELIVERED' ? '#16A34A' : '#B91C1C', marginTop: '8px' }}>
+                      {o.status === 'DELIVERED' ? 'Выдача подтверждена' : 'Заказ отклонён, баллы возвращены'}
+                    </div>
+                  )}
                 </div>
               ))
             )}

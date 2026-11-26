@@ -694,6 +694,21 @@ export const api = {
     return res.json();
   },
 
+  async deductPoints(userId: number, points: number, reason: string): Promise<{ message: string }> {
+    if (!(await isBackendAlive())) throw new Error('Сервер снятия баллов недоступен');
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/points/deduct`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${searchParams}` },
+      body: JSON.stringify({ user_id: userId, points, reason }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось снять баллы');
+    }
+    return res.json();
+  },
+
   async pickLuckyRandom(): Promise<string[]> {
     if (!(await isBackendAlive())) throw new Error('Сервер выбора участников недоступен');
 
@@ -780,16 +795,45 @@ export const api = {
   },
 
   async getAdminOrders(): Promise<Order[]> {
-    return getStorage<Order[]>(STORAGE_KEYS.ORDERS, []);
+    if (!(await isBackendAlive())) throw new Error('Сервер заказов недоступен');
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/orders`, {
+      headers: { Authorization: `Bearer ${searchParams}` },
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось загрузить заказы');
+    }
+    return res.json();
   },
 
-  async deliverOrder(orderId: number): Promise<void> {
-    const orders = getStorage<Order[]>(STORAGE_KEYS.ORDERS, []);
-    const o = orders.find((ord) => ord.id === orderId);
-    if (o) {
-      o.status = 'DELIVERED';
-      setStorage(STORAGE_KEYS.ORDERS, orders);
+  async deliverOrder(orderId: number, pickupCode: string): Promise<Order> {
+    if (!(await isBackendAlive())) throw new Error('Сервер выдачи заказов недоступен');
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/deliver`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${searchParams}` },
+      body: JSON.stringify({ pickup_code: pickupCode }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось подтвердить выдачу');
     }
+    return res.json();
+  },
+
+  async rejectOrder(orderId: number): Promise<Order> {
+    if (!(await isBackendAlive())) throw new Error('Сервер заказов недоступен');
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/reject`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${searchParams}` },
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось отклонить заказ');
+    }
+    return res.json();
   },
 
   async updateShopStock(itemId: number, stock: number): Promise<void> {

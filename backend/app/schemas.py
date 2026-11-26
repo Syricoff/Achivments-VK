@@ -112,6 +112,9 @@ class ShopItemResponse(ShopItemBase):
 class PurchaseRequest(BaseModel):
     item_id: int
 
+class OrderDeliveryRequest(BaseModel):
+    pickup_code: str
+
 class OrderResponse(BaseModel):
     id: int
     user_id: int
