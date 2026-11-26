@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Icon20SparkleOutline,
   Icon20CheckCircleOn,
@@ -144,8 +145,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   const handleGenerateQR = async () => {
     setIsGeneratingQR(true);
     try {
-      const created = await api.generateQRCodes(1);
-      setQrList(created);
+      await api.generateQRCodes(1);
+      setQrList(await api.getAdminQRCodes());
     } catch (e: any) {
       alert(e.message || 'Ошибка создания QR');
     } finally {
@@ -162,8 +163,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   // Stock edit
   const handleStockChange = async (item: ShopItem, delta: number) => {
     const newStock = Math.max(0, item.stock + delta);
-    await api.updateShopStock(item.id, newStock);
-    loadData();
+    try {
+      await api.updateShopStock(item.id, newStock);
+      await loadData();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Не удалось изменить остаток товара');
+    }
   };
 
   return (
@@ -635,15 +640,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px',
                 }}
               >
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--blue-text)' }}>
+                <div style={{ minWidth: 0, flex: '1 1 140px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--blue-text)', overflowWrap: 'anywhere' }}>
                     {qr.code_hash}
                   </div>
                   <div style={{ fontSize: '11px', color: '#6B7280' }}>
                     Награда: {qr.points} баллов
                   </div>
+                </div>
+                <div style={{ flexShrink: 0, backgroundColor: '#FFFFFF', padding: '4px' }}>
+                  <QRCodeSVG value={qr.code_hash} size={88} level="M" marginSize={4} title={`QR-код ${qr.code_hash}`} />
                 </div>
                 <span style={{
                   backgroundColor: qr.is_used ? '#E5E7EB' : '#DCFCE7',

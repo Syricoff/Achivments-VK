@@ -37,7 +37,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
     rank: 3,
   };
 
-  const restUsers = leaderboard.filter((u) => leaderboard.length < 3 || u.rank > 3);
+  const restUsers = leaderboard.filter((u) => u.rank > 3);
 
   return (
     <div className="screen-container">
@@ -108,7 +108,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
         </h2>
 
         {/* 3 Pedestal Circles */}
-        {leaderboard.length >= 3 && <div style={{
+        {leaderboard.length > 0 && <div style={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'flex-end',
@@ -117,7 +117,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
         }}>
           {/* 2nd Place (Left) */}
           <div style={{
-            display: 'flex',
+            display: leaderboard.length > 1 ? 'flex' : 'none',
             flexDirection: 'column',
             alignItems: 'center',
             width: '92px',
@@ -238,7 +238,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
 
           {/* 3rd Place (Right) */}
           <div style={{
-            display: 'flex',
+            display: leaderboard.length > 2 ? 'flex' : 'none',
             flexDirection: 'column',
             alignItems: 'center',
             width: '92px',

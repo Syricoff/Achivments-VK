@@ -717,8 +717,13 @@ export const api = {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${searchParams}` },
           body: JSON.stringify({ points: 10, count }),
         });
-        if (res.ok) return await res.json();
+        if (!res.ok) {
+          const error = await res.json().catch(() => null);
+          throw new Error(error?.detail || 'Не удалось создать QR-код');
+        }
+        return await res.json();
       } catch (e) {
+        if (e instanceof Error && !e.message.includes('Failed to fetch')) throw e;
         console.warn('Backend QR generate failed', e);
       }
     }
@@ -741,6 +746,16 @@ export const api = {
   },
 
   async getAdminQRCodes(): Promise<QRCodeItem[]> {
+    if (await isBackendAlive()) {
+      const res = await fetch(`${API_BASE_URL}/api/admin/qr/list`, {
+        headers: { Authorization: `Bearer ${searchParams}` },
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.detail || 'Не удалось загрузить QR-коды');
+      }
+      return res.json();
+    }
     return getStorage<QRCodeItem[]>(STORAGE_KEYS.QR, [
       { id: 1, code_hash: 'LAMPA-QR-CAMP-001', points: 10, is_used: false, created_at: new Date().toISOString() },
       { id: 2, code_hash: 'LAMPA-QR-CAMP-002', points: 10, is_used: false, created_at: new Date().toISOString() },
@@ -761,6 +776,19 @@ export const api = {
   },
 
   async updateShopStock(itemId: number, stock: number): Promise<void> {
+    if (await isBackendAlive()) {
+      const res = await fetch(`${API_BASE_URL}/api/admin/shop/items/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${searchParams}` },
+        body: JSON.stringify({ stock }),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.detail || 'Не удалось изменить остаток товара');
+      }
+      return;
+    }
+
     const items = getStorage<ShopItem[]>(STORAGE_KEYS.SHOP, INITIAL_SHOP_ITEMS);
     const item = items.find((i) => i.id === itemId);
     if (item) {
