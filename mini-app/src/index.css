@@ -161,7 +161,7 @@ button, input, textarea, select {
   display: flex;
   flex-direction: column;
   background: var(--bg-gradient);
-  padding-top: calc(16px + max(env(safe-area-inset-top, 0px), var(--vk-safe-area-top)));
+  padding-top: calc(56px + max(env(safe-area-inset-top, 0px), var(--vk-safe-area-top)));
   padding-bottom: calc(105px + max(env(safe-area-inset-bottom, 0px), var(--vk-safe-area-bottom)));
   padding-left: calc(18px + max(env(safe-area-inset-left, 0px), var(--vk-safe-area-left)));
   padding-right: calc(18px + max(env(safe-area-inset-right, 0px), var(--vk-safe-area-right)));

@@ -154,6 +154,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
     }
   };
 
+  const handleDownloadQR = (qr: QRCodeItem) => {
+    const svg = document.getElementById(`qr-code-${qr.id}`);
+    if (!(svg instanceof SVGSVGElement)) return;
+
+    const svgMarkup = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${qr.code_hash}.svg`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   // Deliver order
   const handleDeliver = async (orderId: number) => {
     await api.deliverOrder(orderId);
@@ -651,9 +665,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                   <div style={{ fontSize: '11px', color: '#6B7280' }}>
                     Награда: {qr.points} баллов
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadQR(qr)}
+                    style={{
+                      marginTop: '8px',
+                      padding: '7px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '8px',
+                      backgroundColor: '#FFFFFF',
+                      color: 'var(--blue-text)',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Скачать SVG
+                  </button>
                 </div>
                 <div style={{ flexShrink: 0, backgroundColor: '#FFFFFF', padding: '4px' }}>
-                  <QRCodeSVG value={qr.code_hash} size={88} level="M" marginSize={4} title={`QR-код ${qr.code_hash}`} />
+                  <QRCodeSVG id={`qr-code-${qr.id}`} value={qr.code_hash} size={88} level="M" marginSize={4} title={`QR-код ${qr.code_hash}`} />
                 </div>
                 <span style={{
                   backgroundColor: qr.is_used ? '#E5E7EB' : '#DCFCE7',

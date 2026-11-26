@@ -85,8 +85,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ user, leaderboard }) =
             src="/assets/icon.svg"
             alt="Лампа 2026 Чеклист"
             style={{
-              width: '104px',
-              height: '104px',
+              width: '135px',
+              height: '135px',
               objectFit: 'contain',
               filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.15))',
             }}
