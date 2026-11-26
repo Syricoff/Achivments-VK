@@ -380,6 +380,19 @@ export const api = {
     return syncedTasks;
   },
 
+  async getAdminTasks(): Promise<Task[]> {
+    if (!(await isBackendAlive())) throw new Error('Сервер заданий недоступен');
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/tasks`, {
+      headers: { Authorization: `Bearer ${searchParams}` },
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось загрузить задания');
+    }
+    return res.json();
+  },
+
   // Submit task proof
   async submitTask(taskId: number, proofImages: string[], comment?: string): Promise<Submission> {
     if (await isBackendAlive()) {
@@ -859,10 +872,27 @@ export const api = {
   },
 
   async updateTask(task: Task): Promise<void> {
+    if (!(await isBackendAlive())) throw new Error('Сервер заданий недоступен');
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/tasks/${task.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${searchParams}` },
+      body: JSON.stringify({
+        title: task.title,
+        description: task.description,
+        points: task.points,
+      }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      throw new Error(error?.detail || 'Не удалось сохранить задание');
+    }
+
+    const savedTask: Task = await res.json();
     const tasks = getStorage<Task[]>(STORAGE_KEYS.TASKS, INITIAL_TASKS);
-    const idx = tasks.findIndex((t) => t.id === task.id);
+    const idx = tasks.findIndex((t) => t.id === savedTask.id);
     if (idx !== -1) {
-      tasks[idx] = task;
+      tasks[idx] = { ...tasks[idx], ...savedTask };
       setStorage(STORAGE_KEYS.TASKS, tasks);
     }
   },

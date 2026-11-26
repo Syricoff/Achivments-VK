@@ -53,6 +53,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
   // Tasks CRUD state
   const [tasksList, setTasksList] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isSavingTask, setIsSavingTask] = useState(false);
+  const [taskSaveError, setTaskSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -91,7 +93,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
         const items = await api.getShopItems();
         setShopItems(items);
       } else if (activeTab === 'TASKS') {
-        const tasks = await api.getTasks();
+        const tasks = await api.getAdminTasks();
         setTasksList(tasks);
       }
     } catch (e) {
@@ -973,7 +975,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
                 </div>
               </div>
               <button
-                onClick={() => setEditingTask(t)}
+                onClick={() => {
+                  setTaskSaveError(null);
+                  setEditingTask(t);
+                }}
                 style={{
                   padding: '6px 10px',
                   borderRadius: '8px',
@@ -1063,24 +1068,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onPointsCha
               style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #D1D5DB', marginBottom: '14px' }}
             />
             <button
+              disabled={isSavingTask}
               onClick={async () => {
-                await api.updateTask(editingTask);
-                setEditingTask(null);
-                loadData();
+                setIsSavingTask(true);
+                setTaskSaveError(null);
+                try {
+                  await api.updateTask(editingTask);
+                  setEditingTask(null);
+                  await loadData();
+                } catch (e) {
+                  setTaskSaveError(e instanceof Error ? e.message : 'Не удалось сохранить задание');
+                } finally {
+                  setIsSavingTask(false);
+                }
               }}
               style={{
                 width: '100%',
                 padding: '12px',
                 borderRadius: '12px',
                 border: 'none',
-                backgroundColor: 'var(--pink-accent)',
+                backgroundColor: isSavingTask ? '#9CA3AF' : 'var(--pink-accent)',
                 color: '#FFFFFF',
                 fontWeight: 900,
-                cursor: 'pointer',
+                cursor: isSavingTask ? 'wait' : 'pointer',
               }}
             >
-              Сохранить изменения
+              {isSavingTask ? 'Сохранение...' : 'Сохранить изменения'}
             </button>
+            {taskSaveError && (
+              <div role="alert" style={{ marginTop: '10px', color: '#DC2626', fontSize: '12px', fontWeight: 700 }}>
+                {taskSaveError}
+              </div>
+            )}
           </div>
         </div>
       )}
